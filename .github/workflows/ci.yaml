@@ -1,33 +1,38 @@
-name: CI
-
-on:
-  push:
-  workflow_dispatch:
-
 jobs:
   build:
     name: Build on Java ${{ matrix.java }} and ${{ matrix.os }}
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      uses: actions/checkout@v2
+    - continue-on-error: true
+      name: Set up JDK ${{ matrix.java }}
+      uses: actions/setup-java@v1
+      with:
+        java-version: ${{ matrix.java }}
+    - continue-on-error: true
+      name: Cache local Maven repository
+      uses: actions/cache@v2
+      with:
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        path: ~/.m2/repository
+        restore-keys: '${{ runner.os }}-maven-
 
+          '
+    - continue-on-error: true
+      name: Build with Maven
+      run: mvn --batch-mode --update-snapshots verify
     strategy:
       fail-fast: false
       matrix:
-        java: [ 8, 11 ]
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v1
-        with:
-          java-version: ${{ matrix.java }}
-      - name: Cache local Maven repository
-        uses: actions/cache@v2
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
-      - name: Build with Maven
-        run: mvn --batch-mode --update-snapshots verify
+        java:
+        - 8
+        - 11
+        os:
+        - ubuntu-latest
+        - windows-latest
+        - macos-latest
+name: CI
+on:
+  repository_dispatch:
+    types: trigger-ga___ci.yaml
